@@ -8,6 +8,8 @@
   <button type="button" @click="handelRecord">回放</button>
   <button type="button" @click="handelReRecord">网络回放</button>
   <button type="button" @click="handelRequest">请求</button>
+  <button type="button" @click="handelPayStart">支付开始</button>
+  <button type="button" @click="handelPayEnd">支付结束</button>
   <div class="modal rr-mask" v-if="isRecording">正在录制</div>
 </template>
 <script setup>
@@ -30,11 +32,22 @@ const handelStart = () => {
     emit(event) {
       events.value.push(event)
       if (events.value.length >= 50) {
-        // uploadFile()
-        // events.value = []
+        uploadFile()
+        events.value = []
       }
     },
   });
+}
+const handelPayStart =() =>{
+  rrweb.record.addCustomEvent('pay', {
+        text: '正在支付中...',
+        status: 'start'
+    })
+}
+const handelPayEnd =() =>{
+  rrweb.record.addCustomEvent('pay', {
+        status: 'end'
+    })
 }
 /**
  *  压缩 events 数据，并上传至后端
@@ -83,9 +96,9 @@ const handelRecord = () => {
 const handelPasue = () => {
   isRecording.value = false
   stopFn()
-  // if (events.value.length === 0) return
-  // uploadFile();
-  // events.value = []
+  if (events.value.length === 0) return
+  uploadFile();
+  events.value = []
 }
 /**网络请求回放 */
 const handelReRecord = () => {

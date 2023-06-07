@@ -2,10 +2,11 @@
 
 <template>
   <div id="replay" ref="replay" v-if="isPlaying" />
-  <input type="checkbox" placeholder="" />
+  <textarea placeholder-class="textarea-placeholder" />
   <button type="button" @click="handelStart">开始录制</button>
   <button type="button" @click="handelPasue">暂停</button>
   <button type="button" @click="handelRecord">回放</button>
+  <button type="button" @click="handelReRecord">网络回放</button>
   <button type="button" @click="handelRequest">请求</button>
   <div class="modal rr-mask" v-if="isRecording">正在录制</div>
 </template>
@@ -24,12 +25,13 @@ let replayInstance = null;
 const handelStart = () => {
   isPlaying.value = false;
   isRecording.value = true;
+  events.value = []
   stopFn = rrweb.record({
     emit(event) {
       events.value.push(event)
-      if (events.value.length >= 10) {
-        uploadFile()
-        events.value = []
+      if (events.value.length >= 50) {
+        // uploadFile()
+        // events.value = []
       }
     },
   });
@@ -40,12 +42,12 @@ const handelStart = () => {
  */
 const uploadFile = () => {
   console.log("上传快照了");
-  fetch('/apis/uploadFile', {
-    method: 'POST',
+  axios('/apis/uploadFile', {
+    method: 'post',
     headers: {
       'Content-type': 'application/json'
     },
-    body: JSON.stringify({
+    data: JSON.stringify({
       events: events.value
     })
   })
@@ -65,7 +67,6 @@ const handelRecord = () => {
   isPlaying.value = true
   //为了获取到replay dom
   setTimeout(() => {
-    if (replayInstance) return
     replayInstance = new rrwebPlayer({
       target: replay.value, // 可以自定义 DOM 元素
       // 配置项
@@ -73,15 +74,40 @@ const handelRecord = () => {
         events: events.value,
       },
     });
+    replayInstance.addEventListener("finish", (payload) => {
+      console.log(payload,2222);
+    })
   }, 100);
 }
+/**暂停录屏且上传 */
 const handelPasue = () => {
   isRecording.value = false
   stopFn()
-  if (events.value.length === 0) return
-  uploadFile();
-  events.value = []
+  // if (events.value.length === 0) return
+  // uploadFile();
+  // events.value = []
 }
+/**网络请求回放 */
+const handelReRecord = () => {
+  axios('/apis/getFile', {
+    method: 'post'
+  })
+    .then(res => {
+      if (res.data.code == 200) {
+        let { data = [] } = res.data
+        if (data.length) {
+          events.value = data;
+          // replayInstance.destroy()
+          // replayInstance = null
+          handelRecord()
+        }
+      }
+    })
+    .catch(error => {
+      console.log('error', error)
+    })
+}
+/**测试服务器 */
 const handelRequest = () => {
   axios('/apis/count', {
     method: 'get',

@@ -20,7 +20,9 @@ import { ref, onUnmounted } from 'vue';
 import axios from "axios";
 const events = ref([])
 const replay = ref()
+/**是否正在回放 */
 const isPlaying = ref(false)
+/**是否正在录制 */
 const isRecording = ref(false)
 let stopFn = null
 let replayInstance = null;
@@ -30,8 +32,11 @@ const handelStart = () => {
   events.value = []
   stopFn = rrweb.record({
     emit(event) {
+      // 用任意方式存储 event
       events.value.push(event)
-      if (events.value.length >= 50) {
+      // 以 rrwebEvents 的长度作为分片持续上传 防止数据过大
+      if (events.value.length >= 100) {
+        //超过100 上传给后台 同事重置为空
         uploadFile()
         events.value = []
       }
@@ -85,6 +90,12 @@ const handelRecord = () => {
       // 配置项
       props: {
         events: events.value,
+        skipInactive:false,	//是否快速跳过无用户操作的阶段
+        showDebug: false, //是否在回放过程中打印 debug 信息
+        showWarning: false, //是否在回放过程中打印警告信息
+        autoPlay: true, //是否自动播放
+        showControlle :true,	 //是否显示播放器控制 UI
+        speedOption:[1, 2, 4, 8] //倍速播放可选值
       },
     });
     replayInstance.addEventListener("finish", (payload) => {
